@@ -48,17 +48,6 @@ public class MemberServiceV3_1 {
         memberRepository.update(toId, toMember.getMoney() + money);
     }
 
-    private void release(Connection con) {
-        if(con != null){
-            try{
-                con.setAutoCommit(true); // 기본 설정인 auto commit을 자동으로 변경해줘야 한다. 커넥션 풀 고려
-                con.close();
-            }catch(Exception e){
-                log.error("connection error", e);
-            }
-        }
-    }
-
     private void validation(Member toMember) {
         if(toMember.getMemberId().equals("ex")){
             throw new IllegalStateException("계좌 이체 중에 예외 발생");

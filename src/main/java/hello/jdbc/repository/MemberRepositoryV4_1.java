@@ -1,6 +1,7 @@
 package hello.jdbc.repository;
 
 import hello.jdbc.domain.Member;
+import hello.jdbc.repository.ex.MyDbException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -11,17 +12,19 @@ import java.sql.*;
 import java.util.NoSuchElementException;
 
 /**
- * 트랜잭션 - 트랜잭션 매니저
- * DataSourceUtils.getConnection()
- * DataSourceUtils.releaseConnection()
+ * 예외 누수 문제 해결
+ * 체크 예외를 런타임 예외로 변경
+ * MemberRepository 인터페이스 사용
+ * throws SQLException이 제거
  */
 @Slf4j
 @RequiredArgsConstructor
-public class MemberRepositoryV3{
+public class MemberRepositoryV4_1 implements MemberRepository{
 
     private final DataSource dataSource;
 
-    public Member save(Member member) throws SQLException{
+    @Override
+    public Member save(Member member) {
         String sql = "insert into member(member_id, money) values (?, ?)";
 
         Connection con = null;
@@ -36,17 +39,15 @@ public class MemberRepositoryV3{
             pstmt.executeUpdate();
             return member;
         }catch(SQLException e){
-            log.error("db error");
-            throw e;
+            throw new MyDbException(e);
         }finally{
             // 열려있는 connection 관련 객체를 close해준다
             close(con, pstmt, null);
-//            pstmt.close(); // Exception으로 인해 밑에 close가 호출이 안되면? 아래 close함수로 예외를 처리해주자
-//            con.close();
         }
     }
 
-    public Member findById(String memberId) throws SQLException {
+    @Override
+    public Member findById(String memberId){
         String sql = "select * from member where member_id = ?";
 
         Connection con = null;
@@ -71,8 +72,7 @@ public class MemberRepositoryV3{
             }
 
         } catch (SQLException e) {
-            log.error("db error", e);
-            throw e;
+            throw new MyDbException(e);
         }finally {
             close(con, pstmt, rs);
         }
@@ -94,13 +94,13 @@ public class MemberRepositoryV3{
             log.info("resultSize = {} ", resultSize);
 
         }catch(SQLException e){
-            log.error("db error", e);
+            throw new MyDbException(e);
         }finally {
             close(con, pstmt, null);
         }
     }
 
-    public void delete(String memberId) throws SQLException {
+    public void delete(String memberId){
         String sql = "delete from member where member_id = ?";
 
         Connection con = null;
@@ -112,9 +112,8 @@ public class MemberRepositoryV3{
             pstmt.setString(1, memberId);
             pstmt.executeUpdate();
 
-        } catch (SQLException throwables) {
-            log.error("db error", throwables);
-            throw throwables;
+        } catch (SQLException e) {
+            throw new MyDbException(e);
         } finally {
             close(con, pstmt, null);
         }
